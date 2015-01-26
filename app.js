@@ -7,7 +7,7 @@ var anydb = require('any-db');
 var moment = require('moment');
 var winston = require('winston');
 
-// Local modules
+// Local variables
 var config = (function() {
   let argc = process.argv.length;
   let configFile = './config.json';
@@ -19,12 +19,7 @@ var config = (function() {
 
   return require(configFile);
 }());
-var Parser = require('./lib/Parser');
-var parser = new Parser();
-
 var shouldExit = false;
-var chr39 = String.fromCharCode(39);
-
 var log = new (winston.Logger)({
   transports: [
     new (winston.transports.Console)(config.winston.console),
@@ -32,6 +27,7 @@ var log = new (winston.Logger)({
   ]
 });
 
+// Short circuit processing if the lease file doesn't exist
 if (!fs.existsSync(config.app.leasesFile)) {
   log.error('Leases file, `{}`, was not found. Exiting', config.app.leasesFile);
   process.exit(1);
@@ -39,7 +35,8 @@ if (!fs.existsSync(config.app.leasesFile)) {
 
 function logLease(lease) {
   log.debug('lease: `%s`', JSON.stringify(lease));
-  var query = 'insert into leases (record_date, ip, start_date, end_date, tstp, tsfp, ' +
+  let chr39 = String.fromCharCode(39);
+  let query = 'insert into leases (record_date, ip, start_date, end_date, tstp, tsfp, ' +
     'atsfp, cltt, hardware_address, hardware_type, uid, client_hostname) values (' +
     chr39 + moment().toISOString() + chr39 + ',' +
     lease.psqlValuesString() + ')';
@@ -71,8 +68,8 @@ function* parseFileData(data) {
 }
 
 var db = anydb.createPool(config.db.url, config.db.poolOptions);
-var leasesFile = fs.readFileSync(config.app.leasesFile).toString();
-
+let parser = new require('./lib/Parser')();
+let leasesFile = fs.readFileSync(config.app.leasesFile).toString();
 let lines = parseFileData(leasesFile);
 let line = lines.next();
 
