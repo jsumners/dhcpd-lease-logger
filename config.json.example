@@ -1,6 +1,7 @@
 {
   "server": {
-    "socketPath": "/tmp/dhcpd-tracker.input"
+    "leasesFile": "/var/lib/dhcpd/dhcpd.leases",
+    "tempFile": "/tmp/dhcpd.leases.processing"
   },
   "winston": {
     "console": {

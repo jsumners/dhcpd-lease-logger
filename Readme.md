@@ -1,5 +1,9 @@
-# dhcpd-lease-tracker
+# dhcpd-lease-logger
 
-Monitors a dhcpd.leases file and stores the entries in a database.
+Parses a dhcpd.leases file and stores/updates entries in a database. The
+database records are uniquely identified by a hash of the following lease
+properties:
 
-**Important:** while this application works, it will eat your CPU and RAM like a ravenous pig. It's very disappointing.
+* IP address
+* Start date/time
+* MAC address
