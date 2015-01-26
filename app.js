@@ -5,6 +5,7 @@ var fs = require('fs');
 // Third party modules
 var anydb = require('any-db');
 var moment = require('moment');
+var sha256 = require('js-sha256').sha256;
 var winston = require('winston');
 
 // Local variables
@@ -36,10 +37,12 @@ if (!fs.existsSync(config.app.leasesFile)) {
 function logLease(lease) {
   log.debug('lease: `%s`', JSON.stringify(lease));
   let chr39 = String.fromCharCode(39);
+  let hash = sha256(lease.ip + lease.startDate + lease.hardwareAddress);
+  log.debug('hash: `%s`', hash);
   let query = 'insert into leases (record_date, ip, start_date, end_date, tstp, tsfp, ' +
-    'atsfp, cltt, hardware_address, hardware_type, uid, client_hostname) values (' +
+    'atsfp, cltt, hardware_address, hardware_type, uid, client_hostname, hash) values (' +
     chr39 + moment().toISOString() + chr39 + ',' +
-    lease.psqlValuesString() + ')';
+    lease.psqlValuesString() + ',' + chr39 + hash + chr39 + ')';
 
   db.query(
     query,
