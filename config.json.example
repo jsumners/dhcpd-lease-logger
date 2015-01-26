@@ -1,0 +1,34 @@
+{
+  "server": {
+    "socketPath": "/tmp/dhcpd-tracker.input"
+  },
+  "winston": {
+    "console": {
+      "level": "debug",
+      "silent": false,
+      "colorize": true,
+      "timestamp": true
+    },
+    "file": {
+      "level": "info",
+      "silent": true,
+      "colorize": false,
+      "timestamp": true,
+      "filename": "/tmp/dhcpd-tracker.log"
+    }
+  },
+  "db": {
+    "url": {
+      "adapter": "postgres",
+      "host": "127.0.0.1",
+      "port": 5432,
+      "database": "dhcpd",
+      "user": "dhcpd",
+      "password": ""
+    },
+    "poolOptions": {
+      "min": 2,
+      "max": 20
+    }
+  }
+}
