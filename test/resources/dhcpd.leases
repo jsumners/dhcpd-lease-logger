@@ -1,0 +1,30 @@
+lease 172.28.101.91 {
+  starts 2 2013/02/05 19:45:45;
+  ends 3 2013/02/06 19:45:45;
+  tstp 3 2013/02/06 19:45:45;
+  binding state free;
+  hardware ethernet 00:09:6e:0a:fc:54;
+  set hwprint = "00:09:6e:0a:fc:54";
+  set hostline = "AVE0AFC54";
+  set testvar = %11;
+}
+lease 172.28.101.214 {
+  starts 3 2013/02/06 14:20:32;
+  ends 4 2013/02/07 14:20:32;
+  tstp 4 2013/02/07 14:20:32;
+  binding state free;
+  hardware ethernet 00:09:6e:0a:fc:5d;
+  set hwprint = "00:09:6e:0a:fc:5d";
+  set hostline = "AVE0AFC5D";
+  set testvar = %11;
+}
+lease 172.28.101.27 {
+  starts 5 2013/05/17 13:02:26;
+  ends 6 2013/05/18 13:02:26;
+  tstp 6 2013/05/18 13:02:26;
+  binding state free;
+  hardware ethernet 3c:b1:5b:63:98:1b;
+  set hwprint = "3c:b1:5b:63:98:1b";
+  set hostline = "AVX63981B";
+  set testvar = %11;
+}

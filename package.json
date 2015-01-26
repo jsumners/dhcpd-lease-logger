@@ -2,9 +2,9 @@
   "name": "dhcpd-lease-tracker",
   "version": "0.1.0",
   "description": "Used to track the history of DHCPD leases by parsing a leases file on a regular basis",
-  "main": "server.js",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/bin/lab test/test.js"
   },
   "author": "James Sumners",
   "license": "MIT",
@@ -15,5 +15,11 @@
     "moment": "^2.8.4",
     "useful-string": "0.0.1",
     "winston": "^0.8.3"
+  },
+  "devDependencies": {
+    "lab": "^5.2.1"
+  },
+  "engines": {
+    "iojs": "1.0.4"
   }
 }

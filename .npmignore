@@ -1,28 +1,4 @@
-*.sqlite3
-config.json
-
-# Begin template definitions
-
-*.iml
-
-## Directory-based project format:
-.idea/
-
-## File-based project format:
-*.ipr
-*.iws
-
-## Plugin-specific files:
-
-# IntelliJ
-out/
-
-# Crashlytics plugin (for Android Studio and IntelliJ)
-com_crashlytics_export_strings.xml
-crashlytics.properties
-crashlytics-build.properties
-
-
+# Created by .ignore support plugin (hsz.mobi)
 ### Node template
 # Logs
 logs
@@ -52,5 +28,5 @@ build/Release
 # https://www.npmjs.org/doc/misc/npm-faq.html#should-i-check-my-node_modules-folder-into-git-
 node_modules
 
-
-test-config.json
+test/
+.jshintrc

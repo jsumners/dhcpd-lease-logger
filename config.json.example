@@ -1,7 +1,6 @@
 {
-  "server": {
-    "leasesFile": "/var/lib/dhcpd/dhcpd.leases",
-    "tempFile": "/tmp/dhcpd.leases.processing"
+  "app": {
+    "leasesFile": "/var/lib/dhcpd/dhcpd.leases"
   },
   "winston": {
     "console": {
