@@ -1,8 +1,6 @@
 'use strict';
 // Node core modules
 var fs = require('fs');
-var net = require('net');
-var path = require('path');
 
 // Third party modules
 var anydb = require('any-db');
