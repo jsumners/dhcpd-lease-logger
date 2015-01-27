@@ -20,6 +20,8 @@
     "lab": "^5.2.1"
   },
   "engines": {
-    "iojs": "1.0.4"
-  }
+    "iojs": ">=1.0.4",
+    "node": ">=0.12"
+  },
+  "engineStrict": true
 }
