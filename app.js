@@ -1,5 +1,6 @@
 'use strict';
 // Node core modules
+var events = require('events');
 var fs = require('fs');
 
 // Third party modules
@@ -20,13 +21,13 @@ var config = (function() {
 
   return require(configFile);
 }());
-var shouldExit = false;
 var log = new (winston.Logger)({
   transports: [
     new (winston.transports.Console)(config.winston.console),
     new (winston.transports.File)(config.winston.file)
   ]
 });
+var emitter = new events.EventEmitter();
 
 // Short circuit processing if the lease file doesn't exist
 if (!fs.existsSync(config.app.leasesFile)) {
@@ -36,13 +37,12 @@ if (!fs.existsSync(config.app.leasesFile)) {
 
 function logLease(lease) {
   log.debug('lease: `%s`', JSON.stringify(lease));
-  let chr39 = String.fromCharCode(39);
+  let recordDate = moment().toISOString();
+  let leaseValues = lease.psqlValuesString();
   let hash = sha256(lease.ip + lease.startDate + lease.hardwareAddress);
-  log.debug('hash: `%s`', hash);
-  let query = 'insert into leases (record_date, ip, start_date, end_date, tstp, tsfp, ' +
-    'atsfp, cltt, hardware_address, hardware_type, uid, client_hostname, hash) values (' +
-    chr39 + moment().toISOString() + chr39 + ',' +
-    lease.psqlValuesString() + ',' + chr39 + hash + chr39 + ')';
+  let query = `insert into leases (record_date, ip, start_date, end_date, tstp, tsfp,
+    atsfp, cltt, hardware_address, hardware_type, uid, client_hostname, hash) values (
+    '${recordDate}', ${leaseValues}, '${hash}')`;
 
   db.query(
     query,
@@ -53,9 +53,7 @@ function logLease(lease) {
         log.debug('query: %s', query);
       } else {
         log.debug('recorded inserted: `%s`', JSON.stringify(res));
-        if (shouldExit) {
-          process.exit();
-        }
+        emitter.emit('recordInserted');
       }
     }
   );
@@ -70,15 +68,28 @@ function* parseFileData(data) {
   }
 }
 
-var db = anydb.createPool(config.db.url, config.db.poolOptions);
+var leaseCount = 0;
+function handleLease(lease) {
+  leaseCount += 1;
+  logLease(lease);
+}
+
+var insertedCount = 0;
+emitter.on('recordInserted', function recordInsertedHandler() {
+  insertedCount += 1;
+  log.debug('[leaseCount: %s, insertedCount: %s', leaseCount, insertedCount);
+  if (insertedCount === leaseCount) {
+    db.end(); // clear the event queue so the app can exit
+  }
+});
+
+var db = anydb.createConnection(config.db.url);
 let parser = new require('./lib/Parser')();
 let leasesFile = fs.readFileSync(config.app.leasesFile).toString();
 let lines = parseFileData(leasesFile);
 let line = lines.next();
 
 do {
-  parser.parseLine(line.value, logLease);
+  parser.parseLine(line.value, handleLease);
   line = lines.next();
 } while (!line.done);
-
-shouldExit = true;
