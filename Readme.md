@@ -58,6 +58,13 @@ Included in the same directory as `app.js` is the follwing
 Copy the `config.json.example` file to `config.json` and edit it to
 fit your needs.
 
+Additionally, you can specify an alternate `config.json` by passing
+it as a parameter:
+
+```bash
+$ node app.js /path/to/alternate-config.json
+```
+
 For information on the logger options, see the [Winston][winston]
 documentation.
 
