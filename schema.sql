@@ -17,7 +17,7 @@ create table leases (
   hardware_type text,
   uid text,
   client_hostname text,
-  hash text
+  hash bytea
 ) tablespace dhcpd;
 
 create index record_date_index on leases (ip) tablespace dhcpd;
@@ -25,10 +25,10 @@ create index start_date_index on leases (start_date) tablespace dhcpd;
 create index end_date_index on leases (end_date) tablespace dhcpd;
 create index ip_index on leases (ip) tablespace dhcpd;
 create index hardware_address_index on leases (hardware_address) tablespace dhcpd;
-create index hardware_type_index on leases (hardware_type) tablespace dhcpd;
-create index uid_index on leases (uid) tablespace dhcpd;
-create index client_hostname_index on leases (client_hostname) tablespace dhcpd;
-create index hash_index on leases (hash) tablespace dhcpd;
+--create index hardware_type_index on leases (hardware_type) tablespace dhcpd;
+--create index uid_index on leases (uid) tablespace dhcpd;
+--create index client_hostname_index on leases (client_hostname) tablespace dhcpd;
+create unique index hash_index on leases (hash) tablespace dhcpd;
 
 grant select on leases to dhcpd;
 grant insert on leases to dhcpd;

@@ -37,23 +37,66 @@ if (!fs.existsSync(config.app.leasesFile)) {
 
 function logLease(lease) {
   log.debug('lease: `%s`', JSON.stringify(lease));
-  let recordDate = moment().toISOString();
-  let leaseValues = lease.psqlValuesString();
-  let hash = sha256(lease.ip + lease.startDate + lease.hardwareAddress);
-  let query = `insert into leases (record_date, ip, start_date, end_date, tstp, tsfp,
-    atsfp, cltt, hardware_address, hardware_type, uid, client_hostname, hash) values (
-    '${recordDate}', ${leaseValues}, '${hash}')`;
+  var recordDate = moment().toISOString();
+  var leaseValues = lease.psqlValuesString();
+  var hash = new Buffer(
+    sha256(lease.ip + lease.startDate + lease.hardwareAddress)
+  );
+
+
+  function doInsert() {
+    let query = `insert into leases (record_date, ip, start_date, end_date, tstp, tsfp,
+      atsfp, cltt, hardware_address, hardware_type, uid, client_hostname, hash) values (
+      '${recordDate}', ${leaseValues}, cast('${hash}' as bytea))`;
+    log.debug('query: `%s`', query);
+
+    db.query(
+      query,
+      function(err, res) {
+        emitter.emit('leaseProcessed');
+        if (err) {
+          log.error('Could not insert new record: `%s`', JSON.stringify(err));
+          return;
+        }
+
+        log.debug('record inserted: `%s`', JSON.stringify(res));
+      }
+    );
+  }
+
+  function doUpdate() {
+    let query = `update leases set record_date = '${recordDate}',
+      ${lease.psqlSetValuesString()}, hash = cast('${hash}' as bytea) where
+      hash = cast('${hash}' as bytea)`;
+    log.debug('query: `%s`', query);
+
+    db.query(
+      query,
+      function(err, res) {
+        emitter.emit('leaseProcessed');
+        if (err) {
+          log.error('Could not update existing record: `%s`', JSON.stringify(err));
+          return;
+        }
+
+        log.debug('record updated: `%s`', JSON.stringify(res));
+      }
+    );
+  }
 
   db.query(
-    query,
-    [],
+    `select count(1) as c from leases where hash = cast('${hash}' as bytea)`,
     function(err, res) {
       if (err) {
-        log.error('error: %s', JSON.stringify(err));
-        log.debug('query: %s', query);
+        log.error('Could not determine query type: `%s`', JSON.stringify(err));
+        emitter.emit('recordProcessed');
+        return;
+      }
+
+      if (parseInt(res.rows[0].c, 10) === 0) {
+        doInsert();
       } else {
-        log.debug('recorded inserted: `%s`', JSON.stringify(res));
-        emitter.emit('recordInserted');
+        doUpdate();
       }
     }
   );
@@ -74,11 +117,11 @@ function handleLease(lease) {
   logLease(lease);
 }
 
-var insertedCount = 0;
-emitter.on('recordInserted', function recordInsertedHandler() {
-  insertedCount += 1;
-  log.debug('[leaseCount: %s, insertedCount: %s', leaseCount, insertedCount);
-  if (insertedCount === leaseCount) {
+var processedCount = 0;
+emitter.on('leaseProcessed', function recordProcessedHandler() {
+  processedCount += 1;
+  log.debug('[leaseCount: %s, processedCount: %s]', leaseCount, processedCount);
+  if (processedCount === leaseCount) {
     db.end(); // clear the event queue so the app can exit
   }
 });
