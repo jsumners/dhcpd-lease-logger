@@ -13,7 +13,6 @@
     "hapi": "^8.0.0",
     "js-sha256": "^0.1.4",
     "moment": "^2.8.4",
-    "useful-string": "0.0.1",
     "winston": "^0.8.3"
   },
   "devDependencies": {
