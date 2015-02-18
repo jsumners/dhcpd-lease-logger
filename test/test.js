@@ -85,7 +85,7 @@ lab.experiment('parser', function parserExperiment() {
       Code.expect(lease.hardwareAddress).to.equal('00:09:6e:0a:fc:54');
       Code.expect(lease.hardwareType).to.equal('ethernet');
       Code.expect(lease.uid).to.equal(null);
-      Code.expect(lease.clientHostname).to.equal(null);
+      Code.expect(lease.clientHostname).to.equal('AVE0AFC54');
 
 
       done();
