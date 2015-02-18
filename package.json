@@ -1,6 +1,6 @@
 {
   "name": "dhcpd-lease-tracker",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Used to track the history of DHCPD leases by parsing a leases file on a regular basis",
   "main": "app.js",
   "scripts": {
