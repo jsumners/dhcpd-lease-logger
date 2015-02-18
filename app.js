@@ -1,5 +1,6 @@
 'use strict';
 // Node core modules
+var events = require('events');
 var fs = require('fs');
 
 // Third party modules
@@ -20,13 +21,13 @@ var config = (function() {
 
   return require(configFile);
 }());
-var shouldExit = false;
 var log = new (winston.Logger)({
   transports: [
     new (winston.transports.Console)(config.winston.console),
     new (winston.transports.File)(config.winston.file)
   ]
 });
+var emitter = new events.EventEmitter();
 
 // Short circuit processing if the lease file doesn't exist
 if (!fs.existsSync(config.app.leasesFile)) {
@@ -36,26 +37,66 @@ if (!fs.existsSync(config.app.leasesFile)) {
 
 function logLease(lease) {
   log.debug('lease: `%s`', JSON.stringify(lease));
-  let chr39 = String.fromCharCode(39);
-  let hash = sha256(lease.ip + lease.startDate + lease.hardwareAddress);
-  log.debug('hash: `%s`', hash);
-  let query = 'insert into leases (record_date, ip, start_date, end_date, tstp, tsfp, ' +
-    'atsfp, cltt, hardware_address, hardware_type, uid, client_hostname, hash) values (' +
-    chr39 + moment().toISOString() + chr39 + ',' +
-    lease.psqlValuesString() + ',' + chr39 + hash + chr39 + ')';
+  var recordDate = moment().toISOString();
+  var leaseValues = lease.psqlValuesString();
+  var hash = new Buffer(
+    sha256(lease.ip + lease.startDate + lease.hardwareAddress)
+  );
+
+
+  function doInsert() {
+    let query = `insert into leases (record_date, ip, start_date, end_date, tstp, tsfp,
+      atsfp, cltt, hardware_address, hardware_type, uid, client_hostname, hash) values (
+      '${recordDate}', ${leaseValues}, cast('${hash}' as bytea))`;
+    log.debug('query: `%s`', query);
+
+    db.query(
+      query,
+      function(err, res) {
+        emitter.emit('leaseProcessed');
+        if (err) {
+          log.error('Could not insert new record: `%s`', JSON.stringify(err));
+          return;
+        }
+
+        log.debug('record inserted: `%s`', JSON.stringify(res));
+      }
+    );
+  }
+
+  function doUpdate() {
+    let query = `update leases set record_date = '${recordDate}',
+      ${lease.psqlSetValuesString()}, hash = cast('${hash}' as bytea) where
+      hash = cast('${hash}' as bytea)`;
+    log.debug('query: `%s`', query);
+
+    db.query(
+      query,
+      function(err, res) {
+        emitter.emit('leaseProcessed');
+        if (err) {
+          log.error('Could not update existing record: `%s`', JSON.stringify(err));
+          return;
+        }
+
+        log.debug('record updated: `%s`', JSON.stringify(res));
+      }
+    );
+  }
 
   db.query(
-    query,
-    [],
+    `select count(1) as c from leases where hash = cast('${hash}' as bytea)`,
     function(err, res) {
       if (err) {
-        log.error('error: %s', JSON.stringify(err));
-        log.debug('query: %s', query);
+        log.error('Could not determine query type: `%s`', JSON.stringify(err));
+        emitter.emit('recordProcessed');
+        return;
+      }
+
+      if (parseInt(res.rows[0].c, 10) === 0) {
+        doInsert();
       } else {
-        log.debug('recorded inserted: `%s`', JSON.stringify(res));
-        if (shouldExit) {
-          process.exit();
-        }
+        doUpdate();
       }
     }
   );
@@ -70,15 +111,28 @@ function* parseFileData(data) {
   }
 }
 
-var db = anydb.createPool(config.db.url, config.db.poolOptions);
+var leaseCount = 0;
+function handleLease(lease) {
+  leaseCount += 1;
+  logLease(lease);
+}
+
+var processedCount = 0;
+emitter.on('leaseProcessed', function recordProcessedHandler() {
+  processedCount += 1;
+  log.debug('[leaseCount: %s, processedCount: %s]', leaseCount, processedCount);
+  if (processedCount === leaseCount) {
+    db.end(); // clear the event queue so the app can exit
+  }
+});
+
+var db = anydb.createConnection(config.db.url);
 let parser = new require('./lib/Parser')();
 let leasesFile = fs.readFileSync(config.app.leasesFile).toString();
 let lines = parseFileData(leasesFile);
 let line = lines.next();
 
 do {
-  parser.parseLine(line.value, logLease);
+  parser.parseLine(line.value, handleLease);
   line = lines.next();
 } while (!line.done);
-
-shouldExit = true;
